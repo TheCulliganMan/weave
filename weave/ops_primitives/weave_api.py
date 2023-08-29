@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import typing
 import time
 
@@ -19,6 +20,7 @@ from .. import runs
 from .. import artifact_fs
 from .. import artifact_wandb
 from .. import object_context
+from .. import wandb_api
 
 
 @weave_class(weave_type=types.RefType)
@@ -628,6 +630,44 @@ def publish_artifact(
         metadata=head_ref.artifact.metadata.as_dict(),
     )
     return str(ref)
+
+
+@mutation
+def export_panel_to_report(
+    self: graph.Node[typing.Any],
+    report_id: typing.Optional[str] = None,
+    panel_id: typing.Optional[str] = None,
+) -> typing.Any:
+    wandb_api_sync = wandb_api.get_wandb_api_sync()
+
+    if report_id is None:
+        # TODO: create new report
+        return
+
+    report_drafts = wandb_api_sync.view_drafts(report_id)
+    has_drafts = len(report_drafts) > 0
+    if has_drafts != True:
+        # TODO: create new draft
+        return
+
+    report_draft_id = report_drafts[0].get("id")
+    report = wandb_api_sync.view(report_draft_id)
+    spec = json.loads(report.get("spec"))
+    spec["blocks"].append(
+        {
+            "type": "weave-panel",
+            "children": [{"text": ""}],
+            "config": {
+                "panelConfig": {
+                    # TODO: add property similar to __weaveBackendRequired__ to force weave1
+                    "autoFocus": False,
+                    "exp": self.to_json(),
+                    "panelId": panel_id,
+                }
+            },
+        }
+    )
+    wandb_api_sync.upsert_view(report_draft_id, json.dumps(spec))
 
 
 @weave_class(weave_type=types.Function)

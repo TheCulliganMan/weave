@@ -19,10 +19,13 @@ import {
   NodeOrVoidNode,
   Stack,
   Weave,
+  constNone,
+  constString,
   defaultLanguageBinding,
   filterNodes,
   isAssignableTo,
   isNodeOrVoidNode,
+  opReportPanelExport,
   varNode,
   voidNode,
 } from '@wandb/weave/core';
@@ -40,7 +43,7 @@ import styled from 'styled-components';
 
 import {useWeaveContext} from '../../context';
 import {WeaveExpression} from '../../panel/WeaveExpression';
-import {useNodeWithServerType} from '../../react';
+import {useMutation, useNodeWithServerType} from '../../react';
 import {consoleLog} from '../../util';
 import {Tooltip} from '../Tooltip';
 import * as ConfigPanel from './ConfigPanel';
@@ -53,9 +56,10 @@ import {
 } from './PanelContext';
 import * as Styles from './PanelExpression/styles';
 import {
+  useClosePanelInteractDrawer,
   usePanelInputExprIsHighlightedByPath,
   useSelectedPath,
-  useSetInspectingChildPanel,
+  useSetInteractingChildPanel,
   useSetPanelInputExprIsHighlighted,
 } from './PanelInteractContext';
 import PanelNameEditor from './PanelNameEditor';
@@ -73,6 +77,7 @@ import {OutlineItemPopupMenu} from '../Sidebar/OutlineItemPopupMenu';
 import {getConfigForPath} from './panelTree';
 import {usePanelPanelContext} from './PanelPanelContextProvider';
 import {Button} from '../Button';
+import {Tailwind} from '../Tailwind';
 
 // This could be rendered as a code block with assignments, like
 // so.
@@ -462,7 +467,7 @@ const useChildPanelCommon = (props: ChildPanelProps) => {
     [panelInputExpr.type]
   );
 
-  const setInspectingPanel = useSetInspectingChildPanel();
+  const setInteractingPanel = useSetInteractingChildPanel();
 
   return useMemo(
     () => ({
@@ -482,7 +487,7 @@ const useChildPanelCommon = (props: ChildPanelProps) => {
       updatePanelConfig,
       updatePanelConfig2,
       updatePanelInput,
-      setInspectingPanel,
+      setInteractingPanel,
     }),
     [
       curPanelId,
@@ -501,7 +506,7 @@ const useChildPanelCommon = (props: ChildPanelProps) => {
       updatePanelConfig,
       updatePanelConfig2,
       updatePanelInput,
-      setInspectingPanel,
+      setInteractingPanel,
     ]
   );
 };
@@ -529,7 +534,7 @@ export const ChildPanel: React.FC<ChildPanelProps> = props => {
     updatePanelConfig,
     updatePanelConfig2,
     updatePanelInput,
-    setInspectingPanel,
+    setInteractingPanel,
   } = useChildPanelCommon(props);
 
   const {frame} = usePanelContext();
@@ -651,7 +656,9 @@ export const ChildPanel: React.FC<ChildPanelProps> = props => {
                         variant="ghost"
                         size="small"
                         icon="pencil-edit"
-                        onClick={() => setInspectingPanel(props.pathEl ?? '')}
+                        onClick={() =>
+                          setInteractingPanel('edit', props.pathEl ?? '')
+                        }
                       />
                     }>
                     Open panel editor
@@ -672,6 +679,9 @@ export const ChildPanel: React.FC<ChildPanelProps> = props => {
                     onOpen={() => setIsMenuOpen(true)}
                     onClose={() => setIsMenuOpen(false)}
                     isOpen={isMenuOpen}
+                    openExportToReport={() =>
+                      setInteractingPanel('export-report', props.pathEl ?? '')
+                    }
                   />
                 </EditorIcons>
               </>
@@ -849,6 +859,87 @@ export const ChildPanelConfigComp: React.FC<ChildPanelProps> = props => {
         />
       </PanelContextProvider>
     </>
+  );
+};
+
+export const ChildPanelReportExportComp = ({
+  config,
+}: {
+  config: ChildPanelFullConfig;
+}) => {
+  const [reportId, setReportId] = useState('Vmlldzo0MDI1NjI2');
+
+  const selectedPath = useSelectedPath();
+  const localConfig = getConfigForPath(config.config, selectedPath);
+  const exportPanelToReport = useMutation(
+    localConfig.input_node, // TODO: handle Group panels
+    'export_panel_to_report'
+  );
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const closePanelInteractDrawer = useClosePanelInteractDrawer();
+
+  return (
+    <Tailwind style={{height: '100%'}}>
+      <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between border-b border-moon-250 px-16 py-12">
+          <h2 className="text-lg font-semibold">
+            Add {_.last(selectedPath)} to report
+          </h2>
+          <Button
+            icon="close"
+            variant="ghost"
+            onClick={closePanelInteractDrawer}
+          />
+        </div>
+        <div className="flex-1 p-16">
+          <label
+            htmlFor="destination-report"
+            className="mb-4 block font-semibold text-moon-800">
+            Destination report
+          </label>
+          {/* TODO: replace with actual report selection UI */}
+          <input
+            id="destination-report"
+            className="block w-full rounded border border-moon-250 px-10 py-5"
+            value={reportId}
+            onChange={e => setReportId(e.target.value)}
+            placeholder="Report ID"
+          />
+          <p className="mt-16 text-moon-500">
+            Future changes to the board will not affect exported panels inside
+            reports.
+          </p>
+        </div>
+        <div className="border-t border-moon-250 px-16 py-20">
+          <Button
+            icon="add-new"
+            className="w-full"
+            disabled={!reportId || submitting}
+            onClick={async () => {
+              try {
+                setSubmitting(true);
+                await exportPanelToReport({
+                  report_id: reportId ? constString(reportId) : constNone(),
+                  panel_id: localConfig.id
+                    ? constString(localConfig.id)
+                    : constNone(),
+                });
+                closePanelInteractDrawer();
+                // TODO: open in new tab
+              } catch (err) {
+                // TODO: handle error
+                console.error(err);
+              } finally {
+                setSubmitting(false);
+              }
+            }}>
+            {submitting ? 'Adding panel...' : 'Add panel'}
+          </Button>
+        </div>
+      </div>
+    </Tailwind>
   );
 };
 

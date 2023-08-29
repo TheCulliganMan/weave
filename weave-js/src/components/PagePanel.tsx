@@ -25,6 +25,7 @@ import {
   CHILD_PANEL_DEFAULT_CONFIG,
   ChildPanel,
   ChildPanelConfigComp,
+  ChildPanelReportExportComp,
   ChildPanelFullConfig,
 } from './Panel2/ChildPanel';
 import {themes} from './Panel2/Editor.styles';
@@ -42,13 +43,13 @@ import {
 } from './Panel2/PanelGroup';
 import {
   PanelInteractContextProvider,
-  useCloseEditor,
-  useEditorIsOpen,
-  useSetInspectingPanel,
+  useClosePanelInteractDrawer,
+  usePanelInteractMode,
+  useSetInteractingPanel,
 } from './Panel2/PanelInteractContext';
 import {useUpdateConfigForPanelNode} from './Panel2/PanelPanel';
 import {PanelRenderedConfigContextProvider} from './Panel2/PanelRenderedConfigContext';
-import Inspector from './Sidebar/Inspector';
+import PanelInteractDrawer from './Sidebar/PanelInteractDrawer';
 import {useWeaveAutomation} from './automation';
 import {useHistory} from 'react-router-dom';
 
@@ -382,7 +383,7 @@ type PageContentProps = {
 export const PageContent: FC<PageContentProps> = props => {
   const {config, updateConfig, updateConfig2, goHome} = props;
   const weave = useWeaveContext();
-  const editorIsOpen = useEditorIsOpen();
+  const panelInteractMode = usePanelInteractMode();
   const inJupyter = inJupyterCell();
   const {urlPrefixed} = getConfig();
 
@@ -475,18 +476,22 @@ export const PageContent: FC<PageContentProps> = props => {
           updateConfig2={updateConfig2}
         />
       </div>
-      <Inspector active={editorIsOpen}>
-        <ChildPanelConfigComp
-          // pathEl={CHILD_NAME}
-          config={config}
-          updateConfig={updateConfig}
-          updateConfig2={updateConfig2}
-        />
-      </Inspector>
+      <PanelInteractDrawer active={panelInteractMode !== null}>
+        {panelInteractMode === 'edit' && (
+          <ChildPanelConfigComp
+            config={config}
+            updateConfig={updateConfig}
+            updateConfig2={updateConfig2}
+          />
+        )}
+        {panelInteractMode === 'export-report' && (
+          <ChildPanelReportExportComp config={config} />
+        )}
+      </PanelInteractDrawer>
       {inJupyter && (
         <JupyterPageControls
           {...props}
-          reveal={showJupyterControls && !editorIsOpen}
+          reveal={showJupyterControls && panelInteractMode === null}
           goHome={goHome}
           openNewTab={openNewTab}
           maybeUri={maybeUri}
@@ -513,9 +518,9 @@ const JupyterPageControls: React.FC<
   const [hoverText, setHoverText] = useState('');
   // TODO(fix): Hiding code export temporarily as it is partially broken
   // const {copyStatus, onCopy} = useCopyCodeFromURI(props.maybeUri);
-  const setInspectingPanel = useSetInspectingPanel();
-  const closeEditor = useCloseEditor();
-  const editorIsOpen = useEditorIsOpen();
+  const setInteractingPanel = useSetInteractingPanel();
+  const closePanelInteractDrawer = useClosePanelInteractDrawer();
+  const panelInteractMode = usePanelInteractMode();
   const updateInput = useCallback(
     (newInput: NodeOrVoidNode) => {
       props.updateConfig2(oldConfig => {
@@ -599,10 +604,10 @@ const JupyterPageControls: React.FC<
         </JupyterControlsIcon>
       )}
 
-      {editorIsOpen ? (
+      {panelInteractMode === 'edit' ? (
         <JupyterControlsIcon
           onClick={() => {
-            closeEditor();
+            closePanelInteractDrawer();
             setHoverText('Edit configuration');
           }}
           onMouseEnter={e => {
@@ -616,7 +621,7 @@ const JupyterPageControls: React.FC<
       ) : (
         <JupyterControlsIcon
           onClick={() => {
-            setInspectingPanel(['']);
+            setInteractingPanel('edit', ['']);
             setHoverText('Close configuration editor');
           }}
           onMouseEnter={e => {

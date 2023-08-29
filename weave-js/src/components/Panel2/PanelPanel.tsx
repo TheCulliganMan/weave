@@ -22,9 +22,9 @@ import {PanelContextProvider, usePanelContext} from './PanelContext';
 import {fixChildData} from './PanelGroup';
 import {toWeaveType} from './toWeaveType';
 import {
-  useCloseEditor,
+  useClosePanelInteractDrawer,
   useSelectedPath,
-  useSetInspectingPanel,
+  useSetInteractingPanel,
 } from './PanelInteractContext';
 import {useSetPanelRenderedConfig} from './PanelRenderedConfigContext';
 import {OutlineItemPopupMenu} from '../Sidebar/OutlineItemPopupMenu';
@@ -66,7 +66,7 @@ const usePanelPanelCommon = (props: PanelPanelProps) => {
   const updateConfig2 = useUpdateConfig2(props);
   const panelQuery = CGReact.useNodeValue(props.input);
   const selectedPanel = useSelectedPath();
-  const setSelectedPanel = useSetInspectingPanel();
+  const setInteractingPanel = useSetInteractingPanel();
   const panelConfig = props.config;
   const initialLoading = panelConfig == null;
   const {stack} = usePanelContext();
@@ -169,7 +169,7 @@ const usePanelPanelCommon = (props: PanelPanelProps) => {
     loading: initialLoading,
     panelConfig,
     selectedPanel,
-    setSelectedPanel,
+    setInteractingPanel,
     panelUpdateConfig,
     panelUpdateConfig2,
   };
@@ -180,12 +180,12 @@ export const PanelPanelConfig: React.FC<PanelPanelProps> = props => {
     loading,
     panelConfig,
     selectedPanel,
-    setSelectedPanel,
+    setInteractingPanel,
     panelUpdateConfig,
     panelUpdateConfig2,
   } = usePanelPanelCommon(props);
 
-  const closeEditor = useCloseEditor();
+  const closePanelInteractDrawer = useClosePanelInteractDrawer();
   const {
     visible: bodyScrollbarVisible,
     onScroll: onBodyScroll,
@@ -208,8 +208,8 @@ export const PanelPanelConfig: React.FC<PanelPanelProps> = props => {
   );
 
   const goBackToOutline = useCallback(() => {
-    setSelectedPanel([``]);
-  }, [setSelectedPanel]);
+    setInteractingPanel('edit', [``]);
+  }, [setInteractingPanel]);
 
   if (loading) {
     return <Panel2Loader />;
@@ -232,7 +232,7 @@ export const PanelPanelConfig: React.FC<PanelPanelProps> = props => {
                 icon="close"
                 variant="ghost"
                 size="small"
-                onClick={closeEditor}
+                onClick={closePanelInteractDrawer}
               />
             </SidebarConfig.HeaderTopRight>
           </SidebarConfig.HeaderTop>
@@ -241,7 +241,7 @@ export const PanelPanelConfig: React.FC<PanelPanelProps> = props => {
           config={panelConfig}
           updateConfig={panelUpdateConfig}
           updateConfig2={panelUpdateConfig2}
-          setSelected={setSelectedPanel}
+          setSelected={path => setInteractingPanel('edit', path)}
           selected={selectedPanel}
         />
       </SidebarConfig.Container>
@@ -275,13 +275,16 @@ export const PanelPanelConfig: React.FC<PanelPanelProps> = props => {
                 isOpen={isOutlineMenuOpen}
                 onOpen={() => setIsOutlineMenuOpen(true)}
                 onClose={() => setIsOutlineMenuOpen(false)}
+                openExportToReport={() =>
+                  setInteractingPanel('export-report', selectedPanel)
+                }
               />
             )}
             <Button
               icon="close"
               variant="ghost"
               size="small"
-              onClick={closeEditor}
+              onClick={closePanelInteractDrawer}
             />
           </SidebarConfig.HeaderTopRight>
         </SidebarConfig.HeaderTop>

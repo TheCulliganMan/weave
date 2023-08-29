@@ -16,6 +16,7 @@ import {
 } from '../Panel2/panelTree';
 import {OutlinePanelProps} from './Outline';
 import {
+  IconAddNew,
   IconBack,
   IconCopy,
   IconDelete,
@@ -39,6 +40,7 @@ export type OutlineItemPopupMenuProps = Pick<
   onClose?: () => void;
   onOpen?: () => void;
   isOpen: boolean;
+  openExportToReport: () => void;
 };
 
 const OutlineItemPopupMenuComp: React.FC<OutlineItemPopupMenuProps> = ({
@@ -52,6 +54,7 @@ const OutlineItemPopupMenuComp: React.FC<OutlineItemPopupMenuProps> = ({
   onClose,
   onOpen,
   isOpen,
+  openExportToReport,
 }) => {
   const handleDelete = useCallback(
     (ev: React.MouseEvent) => {
@@ -217,8 +220,20 @@ const OutlineItemPopupMenuComp: React.FC<OutlineItemPopupMenuProps> = ({
         onClick: () => handleAddToQueryBar(path),
       });
     }
+    // TODO: internal feature flag, hide in varbar
     items.push({
-      key: 'divider',
+      key: 'divider-0',
+      content: <Divider />,
+      disabled: true,
+    });
+    items.push({
+      key: 'report-export',
+      content: 'Add to report...',
+      icon: <IconAddNew />,
+      onClick: openExportToReport,
+    });
+    items.push({
+      key: 'divider-1',
       content: <Divider />,
       disabled: true,
     });
@@ -230,13 +245,14 @@ const OutlineItemPopupMenuComp: React.FC<OutlineItemPopupMenuProps> = ({
     });
     return items;
   }, [
-    handleAddToQueryBar,
-    handleDelete,
-    handleSplit,
-    handleUnnest,
-    handleDuplicate,
     localConfig.id,
     path,
+    openExportToReport,
+    handleDelete,
+    handleUnnest,
+    handleDuplicate,
+    handleSplit,
+    handleAddToQueryBar,
   ]);
 
   return (

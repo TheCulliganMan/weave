@@ -225,6 +225,72 @@ class WandbApi:
     def server_info(self) -> typing.Any:
         return self.query(self.SERVER_INFO_QUERY)
 
+    VIEW_QUERY = gql.gql(
+        """
+        query View($id: ID!) {
+            view(id: $id) {
+                id
+                spec
+            }
+        }
+        """
+    )
+
+    def view(self, id: str) -> typing.Any:
+        res = self.query(
+            self.VIEW_QUERY,
+            id=id,
+        )
+        return res.get("view")
+
+    VIEW_DRAFTS_QUERY = gql.gql(
+        """
+            query ViewDrafts($id: ID!) {
+                view(id: $id) {
+                    id
+                    children {
+                        edges {
+                            node {
+                                id
+                                displayName
+                            }
+                        }
+                    }
+                }
+            }
+        """
+    )
+
+    def view_drafts(self, id: str) -> typing.Any:
+        res = self.query(
+            self.VIEW_DRAFTS_QUERY,
+            id=id,
+        )
+        edges = res.get("view").get("children").get("edges")
+        return list(map((lambda edge: edge.get("node")), edges))
+
+    UPSERT_VIEW_MUTATION = gql.gql(
+        """
+        mutation UpsertView($id: ID!, $spec: String) {
+            upsertView(
+                input: {
+                    id: $id
+                    spec: $spec
+                }
+            ) {
+                view {
+                    id
+                    spec
+                }
+                inserted
+            }
+        }
+        """
+    )
+
+    def upsert_view(self, id: str, spec: str) -> typing.Any:
+        return self.query(self.UPSERT_VIEW_MUTATION, id=id, spec=spec)
+
     ARTIFACT_MANIFEST_QUERY = gql.gql(
         """
         query ArtifactManifest(
