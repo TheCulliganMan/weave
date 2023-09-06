@@ -10,16 +10,18 @@ import {useEntityAndProject} from './useEntityAndProject';
 import {Select} from './Select';
 
 const CREATE_NEW_REPORT_OPTION = 'Create new report';
+const DEFAULT_REPORT_OPTION = {
+  id: 'create-new-report',
+  name: CREATE_NEW_REPORT_OPTION,
+};
 
 export const ReportSelection = ({config}: {config: ChildPanelFullConfig}) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEntityMenuOpen, setIsEntityMenuOpen] = useState(false);
+  const [isReportMenuOpen, setIsReportMenuOpen] = useState(false);
 
   const {entityName} = useEntityAndProject(config);
   const [selectedEntityName, setSelectedEntityName] = useState(entityName);
-  const [selectedReport, setSelectedReport] = useState({
-    id: 'create-new-report',
-    name: CREATE_NEW_REPORT_OPTION,
-  });
+  const [selectedReport, setSelectedReport] = useState(DEFAULT_REPORT_OPTION);
 
   // Get all of user's entities
   const entitiesNode = w.opUserEntities({user: w.opRootViewer({})});
@@ -55,6 +57,7 @@ export const ReportSelection = ({config}: {config: ChildPanelFullConfig}) => {
   console.log('**entityNames', entityNames);
   console.log('**reports', reports);
 
+  // TODO - loading
   return (
     <div className="flex-1 p-16">
       <label
@@ -67,15 +70,16 @@ export const ReportSelection = ({config}: {config: ChildPanelFullConfig}) => {
         // size="small"
         aria-label="entity selector"
         // defaultInputValue={selectedEntityName}
-        menuIsOpen={isMenuOpen}
-        onMenuOpen={() => setIsMenuOpen(true)}
-        onMenuClose={() => setIsMenuOpen(false)}
+        menuIsOpen={isEntityMenuOpen}
+        onMenuOpen={() => setIsEntityMenuOpen(true)}
+        onMenuClose={() => setIsEntityMenuOpen(false)}
         options={entityNames.result}
         formatOptionLabel={option => option.name}
         value={{name: selectedEntityName}}
         onChange={selected => {
           console.log(selected);
           setSelectedEntityName(selected.name);
+          setSelectedReport(DEFAULT_REPORT_OPTION);
         }}
         // components={customSelectComponents}
         isSearchable={false}
@@ -84,9 +88,9 @@ export const ReportSelection = ({config}: {config: ChildPanelFullConfig}) => {
         // size="small"
         aria-label="entity selector"
         // defaultInputValue={selectedEntityName}
-        menuIsOpen={isMenuOpen}
-        onMenuOpen={() => setIsMenuOpen(true)}
-        onMenuClose={() => setIsMenuOpen(false)}
+        menuIsOpen={isReportMenuOpen}
+        onMenuOpen={() => setIsReportMenuOpen(true)}
+        onMenuClose={() => setIsReportMenuOpen(false)}
         options={reports.result}
         formatOptionLabel={option => option.name}
         value={{name: selectedReport.name}}
