@@ -155,6 +155,15 @@ gql_direct_edge_op(
 
 # Section 5/6: Connection Ops
 gql_connection_op(
+    "project-reports",
+    wdt.ProjectType,
+    "allViews",
+    wdt.ReportType,
+    {},
+    lambda inputs: "first: 10",
+)
+
+gql_connection_op(
     "project-artifactTypes",
     wdt.ProjectType,
     "artifactTypes",

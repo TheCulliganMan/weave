@@ -236,6 +236,69 @@ class WandbApi:
         """
     )
 
+    def entityReports(self, id: str) -> typing.Any:
+        res = self.query(self.ENTITY_REPORTS_QUERY, id=id)
+        return res.get("view")
+
+    ENTITY_REPORTS_QUERY = gql.gql(
+        """
+        query TeamPageProjects($entityName: String!) {
+            entity(name: $entityName) {
+                id
+                organizationId
+                projects(order: "-created_at", first: 100) {
+                    edges {
+                        node {
+                            id
+                            name
+                            entityName
+                            access
+                            computeHours
+                            description
+                            totalRuns
+                            lastActive
+                            totalRunTime
+                            runCount
+                            user {
+                                id
+                                username
+                            }
+                            allViews(viewType: "runs", first: 10000) {
+                                edges {
+                                    node {
+                                        id
+                                        displayName
+                                        description
+                                        user {
+                                            id
+                                            username
+                                            photoUrl
+                                            admin
+                                        }
+                                        project {
+                                            id
+                                            name
+                                            entityName
+                                            access
+                                        }
+                                        starCount
+                                        createdAt
+                                        updatedAt
+                                        starred
+                                        showcasedAt
+                                        previewUrl
+                                        viewCount
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
     def view(self, id: str) -> typing.Any:
         res = self.query(
             self.VIEW_QUERY,

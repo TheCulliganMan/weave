@@ -25,7 +25,6 @@ import {
   CHILD_PANEL_DEFAULT_CONFIG,
   ChildPanel,
   ChildPanelConfigComp,
-  ChildPanelReportExportComp,
   ChildPanelFullConfig,
 } from './Panel2/ChildPanel';
 import {themes} from './Panel2/Editor.styles';
@@ -52,6 +51,7 @@ import {PanelRenderedConfigContextProvider} from './Panel2/PanelRenderedConfigCo
 import PanelInteractDrawer from './Sidebar/PanelInteractDrawer';
 import {useWeaveAutomation} from './automation';
 import {useHistory} from 'react-router-dom';
+import {ExportToReportDrawer} from './Panel2/ExportToReport/ExportToReportDrawer';
 
 const JupyterControlsHelpText = styled.div<{active: boolean}>`
   width: max-content;
@@ -485,7 +485,7 @@ export const PageContent: FC<PageContentProps> = props => {
           />
         )}
         {panelInteractMode === 'export-report' && (
-          <ChildPanelReportExportComp config={config} />
+          <ExportToReportDrawer config={config} />
         )}
       </PanelInteractDrawer>
       {inJupyter && (

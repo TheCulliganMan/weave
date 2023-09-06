@@ -448,6 +448,8 @@ export const toGqlField = (
     return gqlBasicField('name');
   } else if (forwardOp.op.name === 'entity-isTeam') {
     return gqlBasicField('isTeam');
+  } else if (forwardGraph.getOp.name === 'entity-internalId') {
+    return gqlBasicField('id');
   } else if (forwardOp.op.name === 'entity-portfolios') {
     return [
       {
@@ -469,6 +471,22 @@ export const toGqlField = (
         // TODO: hardcoding for perf during dev
         args: gqlArgs({
           first: childLimitWithDefault(LIMIT_ENTITY_PROJECTS),
+        }),
+        fields: [
+          {
+            name: 'edges',
+            fields: [gqlObjectField(forwardGraph, forwardOp, 'node')],
+          },
+        ],
+      },
+    ];
+  } else if (forwardOp.op.name === 'entity-reports') {
+    return [
+      {
+        name: 'views',
+        // TODO: hardcoding for perf during dev
+        args: gqlArgs({
+          first: childLimitWithDefault(LIMIT_ORG_REPORTS),
         }),
         fields: [
           {
@@ -664,6 +682,8 @@ export const toGqlField = (
     return gqlBasicField('name');
   } else if (forwardOp.op.name === 'org-teams') {
     return [gqlObjectField(forwardGraph, forwardOp, 'teams')];
+  } else if (forwardOp.op.name === 'report-internalId') {
+    return gqlBasicField('id');
   } else if (forwardOp.op.name === 'report-name') {
     return gqlBasicField('displayName');
   } else if (forwardOp.op.name === 'report-link') {

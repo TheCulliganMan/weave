@@ -14,6 +14,7 @@ from .. import errors
 # Section 1/6: Tag Getters
 #
 
+
 # Section 2/6: Root Ops
 @op(
     name="root-allReportsGQLResolver",
@@ -58,6 +59,18 @@ def root_all_reports():
 
 # Section 3/6: Attribute Getters
 gql_prop_op(
+    "report-internalId",
+    wdt.ReportType,
+    "id",
+    types.String(),
+)
+gql_prop_op(
+    "report-name",
+    wdt.ReportType,
+    "displayName",
+    types.String(),
+)
+gql_prop_op(
     "report-createdAt",
     wdt.ReportType,
     "createdAt",
@@ -89,6 +102,7 @@ gql_direct_edge_op(
 #
 
 # Section 6/6: Non Standard Business Logic Ops
+
 
 # Logic taken exactly from Weave0 / frontend
 def make_name_and_id(id: str, name: typing.Optional[str]) -> str:

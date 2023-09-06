@@ -29,6 +29,7 @@ import {
   varNode,
   voidNode,
 } from '@wandb/weave/core';
+import * as w from '@wandb/weave/core';
 import {isValidVarName} from '@wandb/weave/core/util/var';
 import * as _ from 'lodash';
 import React, {
@@ -43,7 +44,7 @@ import styled from 'styled-components';
 
 import {useWeaveContext} from '../../context';
 import {WeaveExpression} from '../../panel/WeaveExpression';
-import {useMutation, useNodeWithServerType} from '../../react';
+import {useMutation, useNodeValue, useNodeWithServerType} from '../../react';
 import {consoleLog} from '../../util';
 import {Tooltip} from '../Tooltip';
 import * as ConfigPanel from './ConfigPanel';
@@ -78,6 +79,9 @@ import {getConfigForPath} from './panelTree';
 import {usePanelPanelContext} from './PanelPanelContextProvider';
 import {Button} from '../Button';
 import {Tailwind} from '../Tailwind';
+import {useLocation, useParams} from 'react-router-dom';
+import {determineURISource, uriFromNode} from '../PagePanelComponents/util';
+import {useBranchPointFromURIString} from '../PagePanelComponents/hooks';
 
 // This could be rendered as a code block with assignments, like
 // so.
@@ -859,87 +863,6 @@ export const ChildPanelConfigComp: React.FC<ChildPanelProps> = props => {
         />
       </PanelContextProvider>
     </>
-  );
-};
-
-export const ChildPanelReportExportComp = ({
-  config,
-}: {
-  config: ChildPanelFullConfig;
-}) => {
-  const [reportId, setReportId] = useState('Vmlldzo0MDI1NjI2');
-
-  const selectedPath = useSelectedPath();
-  const localConfig = getConfigForPath(config.config, selectedPath);
-  const exportPanelToReport = useMutation(
-    localConfig.input_node, // TODO: handle Group panels
-    'export_panel_to_report'
-  );
-
-  const [submitting, setSubmitting] = useState(false);
-
-  const closePanelInteractDrawer = useClosePanelInteractDrawer();
-
-  return (
-    <Tailwind style={{height: '100%'}}>
-      <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-moon-250 px-16 py-12">
-          <h2 className="text-lg font-semibold">
-            Add {_.last(selectedPath)} to report
-          </h2>
-          <Button
-            icon="close"
-            variant="ghost"
-            onClick={closePanelInteractDrawer}
-          />
-        </div>
-        <div className="flex-1 p-16">
-          <label
-            htmlFor="destination-report"
-            className="mb-4 block font-semibold text-moon-800">
-            Destination report
-          </label>
-          {/* TODO: replace with actual report selection UI */}
-          <input
-            id="destination-report"
-            className="block w-full rounded border border-moon-250 px-10 py-5"
-            value={reportId}
-            onChange={e => setReportId(e.target.value)}
-            placeholder="Report ID"
-          />
-          <p className="mt-16 text-moon-500">
-            Future changes to the board will not affect exported panels inside
-            reports.
-          </p>
-        </div>
-        <div className="border-t border-moon-250 px-16 py-20">
-          <Button
-            icon="add-new"
-            className="w-full"
-            disabled={!reportId || submitting}
-            onClick={async () => {
-              try {
-                setSubmitting(true);
-                await exportPanelToReport({
-                  report_id: reportId ? constString(reportId) : constNone(),
-                  panel_id: localConfig.id
-                    ? constString(localConfig.id)
-                    : constNone(),
-                });
-                closePanelInteractDrawer();
-                // TODO: open in new tab
-              } catch (err) {
-                // TODO: handle error
-                console.error(err);
-              } finally {
-                setSubmitting(false);
-              }
-            }}>
-            {submitting ? 'Adding panel...' : 'Add panel'}
-          </Button>
-        </div>
-      </div>
-    </Tailwind>
   );
 };
 
