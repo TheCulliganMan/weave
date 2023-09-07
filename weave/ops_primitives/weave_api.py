@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import random
 import typing
 import time
 
@@ -632,23 +633,46 @@ def publish_artifact(
     return str(ref)
 
 
-@mutation
+def ID():
+    #   // Math.random should be unique because of its seeding algorithm.
+    #   // Convert it to base 36 (numbers + letters), and grab the first 9 characters
+    #   // after the decimal.
+    return random.random().toString(36).substr(2, 9)
+
+
+@op(
+    mutation=True,
+    hidden=True,
+)
 def export_panel_to_report(
     self: graph.Node[typing.Any],
     report_id: typing.Optional[str] = None,
+    entity_name: typing.Optional[str] = None,
+    project_name: typing.Optional[str] = None,
     panel_id: typing.Optional[str] = None,
-) -> typing.Any:
+) -> typing.Optional[str]:
     wandb_api_sync = wandb_api.get_wandb_api_sync()
 
     if report_id is None:
+        # view = wandb_api_sync.upsert_view(
+        #     name=ID(),
+        #     display_name="Untitled Report",
+        #     type="runs/draft",
+        #     entity_name=entity_name,  # Fix to use _ and lowercase
+        #     projectName=project_name,
+        #     description="",
+        #     spec=None,
+        #     createdUsing="",  # TODO
+        # )
+
         # TODO: create new report
-        return
+        return report_id
 
     report_drafts = wandb_api_sync.view_drafts(report_id)
     has_drafts = len(report_drafts) > 0
-    if has_drafts != True:
+    if has_drafts is not True:
         # TODO: create new draft
-        return
+        return report_id
 
     report_draft_id = report_drafts[0].get("id")
     report = wandb_api_sync.view(report_draft_id)
@@ -668,6 +692,7 @@ def export_panel_to_report(
         }
     )
     wandb_api_sync.upsert_view(report_draft_id, json.dumps(spec))
+    return report_id
 
 
 @weave_class(weave_type=types.Function)

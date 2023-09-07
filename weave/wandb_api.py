@@ -332,18 +332,54 @@ class WandbApi:
         edges = res.get("view").get("children").get("edges")
         return list(map((lambda edge: edge.get("node")), edges))
 
+    #       if (view.id == null) {
+    #     if ((view.name == null && view.displayName == null) || view.type == null) {
+    #       throw new Error(
+    #         "If a view ID isn't provided, a name and type must be provided."
+    #       );
+    #     }
+    #   }
     UPSERT_VIEW_MUTATION = gql.gql(
         """
-        mutation UpsertView($id: ID!, $spec: String) {
+        mutation UpsertView(
+            $id: ID
+            $name: String
+            $display_name: String
+            $type: String
+            $entity_name: String
+            $project_name: String
+            $description: String
+            $spec: String
+            $created_using: ViewSource
+        ) {
             upsertView(
                 input: {
                     id: $id
+                    name: $name
+                    displayName: $display_name
+                    type: $type
+                    entityName: $entity_name
+                    projectName: $project_name
+                    description: $description
                     spec: $spec
+                    createdUsing: $created_using
                 }
             ) {
                 view {
                     id
+                    name
+                    displayName
+                    type
+                    entityName
+                    description
+                    project {
+                        id
+                        name
+                        entityName
+                        readOnly
+                    }
                     spec
+                    createdUsing
                 }
                 inserted
             }
@@ -351,8 +387,28 @@ class WandbApi:
         """
     )
 
-    def upsert_view(self, id: str, spec: str) -> typing.Any:
-        return self.query(self.UPSERT_VIEW_MUTATION, id=id, spec=spec)
+    def upsert_view(
+        self,
+        id: typing.Optional[str] = None,
+        display_name: typing.Optional[str] = None,
+        type: typing.Optional[str] = None,
+        entity_name: typing.Optional[str] = None,
+        project_name: typing.Optional[str] = None,
+        description: typing.Optional[str] = None,
+        spec: typing.Optional[str] = None,
+        created_using: typing.Optional[str] = None,
+    ) -> typing.Any:
+        return self.query(
+            self.UPSERT_VIEW_MUTATION,
+            id=id,
+            display_name=display_name,
+            type=type,
+            entity_name=entity_name,
+            project_name=project_name,
+            description=description,
+            spec=spec,
+            created_using=created_using,  # TODO - add view source to BE
+        )
 
     ARTIFACT_MANIFEST_QUERY = gql.gql(
         """

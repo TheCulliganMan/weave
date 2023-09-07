@@ -323,6 +323,7 @@ export const useNodeValue = <T extends Type>(
           // if (callSite != null) {
           //   console.log('useNodeValue resolve', callSite, node);
           // }
+          console.log(node, nodeRes);
           setResult({node, value: nodeRes});
         },
         caughtError => {
