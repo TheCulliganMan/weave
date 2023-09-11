@@ -9,6 +9,8 @@ import {ChildPanelFullConfig} from '../ChildPanel';
 import {useEntityAndProject} from './useEntityAndProject';
 import {Select} from './Select';
 import {report} from 'process';
+import {constFunction} from '@wandb/weave/core';
+import {isPanel} from '../../WeavePanelBank/panelbank';
 
 const CREATE_NEW_REPORT_OPTION = 'Create new report';
 const DEFAULT_REPORT_OPTION = {
@@ -56,40 +58,35 @@ export const ReportSelection = ({config}: ReportSelectionProps) => {
     }),
   });
   const entityNames = useNodeValue(entitiesMetaNode);
-
+  const entityNode = w.opRootEntity({
+    entityName: w.constString(selectedEntityName),
+  });
   // Get all of entity's project
-  // const projectsNode = w.opEntityProjects({
-  //   entity: w.opRootEntity({entityName: w.constString(selectedEntityName)}),
-  // });
+  const projectsNode = w.opEntityProjects({
+    entity: entityNode,
+  });
   const projectsMetaNode = w.opMap({
-    arr: w.opEntityProjects({
-      entity: w.opRootEntity({entityName: w.constString(selectedEntityName)}),
-    }),
+    arr: projectsNode,
     mapFn: w.constFunction({row: 'entity'}, ({row}) => {
       return w.opDict({
         id: w.opProjectInternalId({entity: row}),
         name: w.opProjectName({entity: row}),
+        // reports: w.opProjectReports({project: row}),
       } as any);
     }),
   });
+  // List of projects
   const projects = useNodeValue(projectsMetaNode, {
     skip: selectedEntityName == null || entityNames.loading,
   });
 
-  // Get the reports for the selected entity
-  // WHY DOESN"T THIS ONE WORK
-  const reportsNode = w.opProjectReports({
-    project: w.opRootProject({
-      entityName: w.constString(selectedEntityName ?? ''),
-      projectName: w.constString(selectedProjectName ?? ''),
-    }),
-  });
-  // THIS WORKS
-  // const reportsNode = w.opEntityReports({
-  //   enity: w.opRootEntity({
-  //     entityName: w.constString(selectedProjectName ?? ''),
-  //   }),
+  // THESE ARE EQUIVALENT
+  // const reportsNode = w.opProjectReports({
+  //   project: entityNode, // USES ENTITY NODE INSTEAD OF PROJECT
   // });
+  const reportsNode = w.opEntityReports({
+    enity: entityNode,
+  });
 
   const reportsMetaNode = w.opMap({
     arr: reportsNode,
@@ -97,17 +94,28 @@ export const ReportSelection = ({config}: ReportSelectionProps) => {
       return w.opDict({
         id: w.opReportInternalId({report: row}),
         name: w.opReportName({report: row}),
+        projectName: w.opProjectName({
+          project: w.opReportProject({report: row}),
+        }),
       } as any);
     }),
   });
-  const reports = useNodeValue(reportsMetaNode, {
-    skip:
-      selectedProjectName == null ||
-      selectedEntityName == null ||
-      projects.loading ||
-      entityNames.loading,
+  const filteredReportsMetaNode = w.opFilter({
+    arr: reportsMetaNode,
+    filterFn: constFunction(
+      {row: w.listObjectType(reportsMetaNode.type)},
+      ({row}) => {
+        return w.opStringEqual({
+          lhs: w.opPick({
+            obj: row,
+            key: w.constString('projectName'),
+          }),
+          rhs: w.constString(selectedProjectName),
+        });
+      }
+    ),
   });
-  console.log('**reports', reports);
+  const reports = useNodeValue(filteredReportsMetaNode);
 
   // TODO - loading
   return (
@@ -167,7 +175,7 @@ export const ReportSelection = ({config}: ReportSelectionProps) => {
         className="mb-4 block font-semibold text-moon-800">
         Destination report
       </label>
-      {/* <Select<string, false>
+      <Select<string, false>
         // size="small"
         className="mb-8"
         aria-label="report selector"
@@ -185,7 +193,7 @@ export const ReportSelection = ({config}: ReportSelectionProps) => {
         }}
         // components={customSelectComponents}
         isSearchable={false}
-      /> */}
+      />
       <p className="mt-16 text-moon-500">
         Future changes to the board will not affect exported panels inside
         reports.

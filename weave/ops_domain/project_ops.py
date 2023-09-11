@@ -160,7 +160,7 @@ gql_connection_op(
     "allViews",
     wdt.ReportType,
     {},
-    lambda inputs: "first: 10",
+    # lambda inputs: "first: 10",
 )
 
 gql_connection_op(
